@@ -5,6 +5,7 @@ from tkinter import filedialog
 from tkinter.filedialog import asksaveasfile
 from PIL import Image, ImageTk
 
+
 # from tkinter.ttk import *
 
 
@@ -89,6 +90,7 @@ class MapMaker:
         self._fileMenu.add_command(label="Open", command=self.open)
         self._fileMenu.add_command(label="Save As", command=self.save)
 
+
         # left frame set up
         self._frameLeft = Frame(self._master)
 
@@ -112,7 +114,7 @@ class MapMaker:
         self._rbAddRow = Radiobutton(self._frameLeft, text="Add Row", variable=self._mode, value=4)
         self._rbAddRow.grid(row=5, sticky="W")
 
-        self._AB= IntVar()
+        self._AB = IntVar()
         self._rbAbove = Radiobutton(self._frameLeft, text="Above", variable=self._AB, value=0)
         self._rbAbove.grid(row=5, column=1, sticky="W")
 
@@ -137,28 +139,27 @@ class MapMaker:
 
         self._frameLeft.grid(row=0, column=0)
 
+
         # right frame set up
         self._frameRight = Frame(self._master)
 
-        self._mapArray = []
-        self._buttonMap = []
+        self._mapCanvas = Canvas(self._frameRight)
+        self._mapFrame = Frame(self._mapCanvas)
+        self._vsb = Scrollbar(self._frameRight, orient="vertical", command=self._mapCanvas.yview)
+        self._hsb = Scrollbar(self._frameRight, orient="horizontal", command=self._mapCanvas.xview)
+        self._mapCanvas.configure(yscrollcommand=self._vsb.set, xscrollcommand=self._hsb.set)
 
-        # loop to set up tile placement
-        for i in range(self._rows):
-            arr = []
-            buttonArr = []
-            for j in range(self._cols):
-                arr.append(14)
-                buttonArr.append(Button(self._frameRight, text=str(14), image=self._photos[-1], borderwidth=0, command=partial(self.tileChange, i, j)))
-                if self._rows >= 30:
-                    buttonArr[j].config(width=16, height=16)
+        self._vsb.pack(side="right", fill="y")
+        self._hsb.pack(side="bottom", fill="x")
+        self._mapCanvas.pack(side="left", fill="both", expand=True)
+        self._mapCanvas.create_window((4, 4), window=self._mapFrame, anchor="nw")
 
-                buttonArr[j].grid(row=i, column=j)
-
-            self._mapArray.append(arr)
-            self._buttonMap.append(buttonArr)
+        self._mapFrame.bind("<Configure>", self.onFrameConfigure)
 
         self._frameRight.grid(row=0, column=1, columnspan=5)
+
+        self._mapArray = []
+        self._buttonMap = []
 
         # Bottom frame set up
         self._frameBottom = Frame(self._master)
@@ -175,9 +176,42 @@ class MapMaker:
 
         if self._rows == 0:
             self.open()
+        else:
+            self.mapSetup()
+
+        # window size change
+        self._master.bind("<Configure>", self.onFrameConfigure)
 
         mainloop()
 
+    def mapSetup(self, lines=None):
+        self._mapArray = []
+        self._buttonMap = []
+
+        # loop to set up tile placement
+        for i in range(self._rows):
+            arr = []
+            buttonArr = []
+            if lines is not None:
+                lines[i] = lines[i].split()
+            for j in range(self._cols):
+                if lines is None:
+                    arr.append(14)
+                    buttonArr.append(Button(self._mapFrame, text=str(14), image=self._photos[-1], borderwidth=0,
+                                            command=partial(self.tileChange, i, j)))
+                else:
+                    arr.append(int(lines[i][j]))
+                    buttonArr.append(Button(self._mapFrame, text=int(lines[i][j]), image=self._photos[int(lines[i][j])], borderwidth=0,
+                                         command=partial(self.tileChange, i, j)))
+
+                buttonArr[j].grid(row=i, column=j)
+
+            self._mapArray.append(arr)
+            self._buttonMap.append(buttonArr)
+
+    def onFrameConfigure(self, event):
+        self._mapCanvas.configure(scrollregion=self._mapCanvas.bbox("all"))
+        self._frameRight.config(width=(self._master.winfo_width() - self._frameLeft.winfo_width()), height=(self._master.winfo_height() - self._frameBottom.winfo_height()))
 
     def select(self, i):
         self._lblTile.config(image=self._photos[i])
@@ -208,25 +242,9 @@ class MapMaker:
         lines = lines[:self._rows]
 
         self._cols = len(lines[0].split())
-        self._frameRight.destroy()
-        self._frameRight = Frame(self._master)
-        Label(self._frameRight, text="here").grid()
 
-        self._mapArray = []
-        self._buttonMap = []
+        self.mapSetup(lines)
 
-        j = 0
-        for i in range(self._rows):
-            numRow = []
-            btnRow = []
-            for tile in lines[i].split():
-                numRow.append(int(tile))
-                btnRow.append(Button(self._frameRight, text=tile, image=self._photos[int(tile)], borderwidth=0, command=partial(self.tileChange, i, j)))
-                btnRow[j].grid(row=i, column=j)
-                j += 1
-            j = 0
-            self._mapArray.append(numRow)
-            self._buttonMap.append(btnRow)
         self._frameRight.grid(row=0, column=1)
         mapFile.close()
 
@@ -260,8 +278,8 @@ class MapMaker:
                 self._multiTileIndex = (i, j)
                 self._multiTileStage = 1
             else:
-                for i2 in range(min(self._multiTileIndex[0], i), max(self._multiTileIndex[0], i)+ 1):
-                    for j2 in range(min(self._multiTileIndex[1], j), max(self._multiTileIndex[1], j)+ 1):
+                for i2 in range(min(self._multiTileIndex[0], i), max(self._multiTileIndex[0], i) + 1):
+                    for j2 in range(min(self._multiTileIndex[1], j), max(self._multiTileIndex[1], j) + 1):
                         self._buttonMap[i2][j2].config(image=self._photos[self._tileIndex])
                         self._mapArray[i2][j2] = self._tileIndex
                 self._multiTileStage = 0
@@ -272,7 +290,7 @@ class MapMaker:
             for button in self._buttonMap[i]:
                 button.destroy()
             self._buttonMap.pop(i)
-            self._rows -=1
+            self._rows -= 1
 
             for i2 in range(i, self._rows):
                 for j2 in range(self._cols):
@@ -315,7 +333,10 @@ class MapMaker:
         elif self._mode.get() == 5:
             for i2 in range(len(self._mapArray)):
                 self._mapArray[i2].insert(j + self._LR.get(), len(self._photos) - 1)
-                self._buttonMap[i2].insert(j + self._LR.get(), Button(self._frameRight, text=str(len(self._photos) - 1), image=self._photos[-1], borderwidth=0, command=partial(self.tileChange, i2, j + self._LR.get())))
+                self._buttonMap[i2].insert(j + self._LR.get(), Button(self._frameRight, text=str(len(self._photos) - 1),
+                                                                      image=self._photos[-1], borderwidth=0,
+                                                                      command=partial(self.tileChange, i2,
+                                                                                      j + self._LR.get())))
             self._cols += 1
 
             for i2 in range(self._rows):
