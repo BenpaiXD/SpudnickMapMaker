@@ -229,27 +229,30 @@ class MapMaker:
                                               title="Select a File",
                                               filetypes=(("Text files", "*.txt*"), ("all files", "*.*")))
 
-        mapFile = open(filename, "r")
+        if filename == "":
+            self.new()
+        else:
+            mapFile = open(filename, "r")
 
-        self._rows = 0
-        self._cols = 0
-        lines = mapFile.readlines()
-        for line in lines:
-            if line == "|\n":
-                break
-            self._rows += 1
+            self._rows = 0
+            self._cols = 0
+            lines = mapFile.readlines()
+            for line in lines:
+                if line == "|\n":
+                    break
+                self._rows += 1
 
-        lines = lines[:self._rows]
+            lines = lines[:self._rows]
 
-        self._cols = len(lines[0].split())
+            self._cols = len(lines[0].split())
 
-        self.mapSetup(lines)
+            self.mapSetup(lines)
 
-        self._frameRight.grid(row=0, column=1)
-        mapFile.close()
+            self._frameRight.grid(row=0, column=1)
+            mapFile.close()
 
-        print(len(self._buttonMap))
-        print(len(self._photos))
+            print(len(self._buttonMap))
+            print(len(self._photos))
 
     def save(self):
         file = asksaveasfile(mode='w', defaultextension=".txt")
@@ -318,7 +321,7 @@ class MapMaker:
             for i2 in range(len(self._mapArray[0])):
                 numRow.append(len(self._photos) - 1)
                 btnRow.append(
-                    Button(self._frameRight, text=str(len(self._photos) - 1), image=self._photos[-1], borderwidth=0,
+                    Button(self._mapFrame, text=str(len(self._photos) - 1), image=self._photos[-1], borderwidth=0,
                            command=partial(self.tileChange, i + self._AB.get(), i2)))
                 # btnRow[i2].grid(row=i + self._AB.get(), column=i2)
             self._mapArray.insert(i + self._AB.get(), numRow)
@@ -330,10 +333,11 @@ class MapMaker:
                     self._buttonMap[i2][j2].grid(row=i2, column=j2)
                     self._buttonMap[i2][j2].config(command=partial(self.tileChange, i2, j2))
 
+        # add column mode
         elif self._mode.get() == 5:
             for i2 in range(len(self._mapArray)):
                 self._mapArray[i2].insert(j + self._LR.get(), len(self._photos) - 1)
-                self._buttonMap[i2].insert(j + self._LR.get(), Button(self._frameRight, text=str(len(self._photos) - 1),
+                self._buttonMap[i2].insert(j + self._LR.get(), Button(self._mapFrame, text=str(len(self._photos) - 1),
                                                                       image=self._photos[-1], borderwidth=0,
                                                                       command=partial(self.tileChange, i2,
                                                                                       j + self._LR.get())))
